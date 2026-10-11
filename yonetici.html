@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Emniyetsiz Durum Avı — Yönetici</title>
+<title>Risk Avı — Yönetici</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,7 +12,6 @@
 :root{
   --bg:#0d1117; --panel:#161b22; --panel2:#1f2630; --line:#2d3540; --text:#eef2f6; --muted:#8b97a5;
   --accent:#ff7a1a; --ok:#2fbf71; --bad:#e5484d;
-  --kirmizi:#E53935; --yesil:#2E9D4F; --mavi:#1E6FD9; --sari:#F2B705;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -74,9 +73,9 @@ input:focus{outline:2px solid var(--accent);outline-offset:1px}
 .bar .hint{color:var(--muted);margin-right:auto}
 
 /* Takımlar */
-.teams{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;flex:1}
+.teams{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;flex:1}
 .team{border-radius:20px;overflow:hidden;background:var(--panel);border:1px solid var(--line);display:flex;flex-direction:column}
-.team .th{padding:16px 18px;font-weight:900;font-size:26px;display:flex;justify-content:space-between;align-items:center}
+.team .th{padding:14px 16px;font-weight:900;font-size:22px;display:flex;justify-content:space-between;align-items:center}
 .team .th small{font-size:15px;font-weight:700;opacity:.85}
 .team ul{list-style:none;padding:12px;display:flex;flex-direction:column;gap:6px}
 .team li{background:var(--panel2);border-radius:10px;padding:10px 14px;font-weight:600;font-size:17px;animation:drop .45s cubic-bezier(.2,1.4,.4,1)}
@@ -108,8 +107,8 @@ input:focus{outline:2px solid var(--accent);outline-offset:1px}
 .review .imgstage{min-height:auto;position:sticky;top:20px;align-self:start;height:calc(100vh - 130px)}
 .review .imgstage img{max-height:100%}
 .rpanel{display:flex;flex-direction:column;gap:14px;min-width:0}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-.tab{padding:14px 8px;border-radius:14px;font-weight:900;font-size:17px;border:3px solid transparent;position:relative;opacity:.55}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.tab{padding:14px 6px;border-radius:14px;font-weight:900;font-size:15px;border:3px solid transparent;position:relative;opacity:.55}
 .tab.on{opacity:1;border-color:#fff;transform:translateY(-2px)}
 .tab .sc{display:block;font-size:13px;font-weight:700;margin-top:3px;opacity:.9}
 .rbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0}
@@ -165,7 +164,7 @@ input:focus{outline:2px solid var(--accent);outline-offset:1px}
 
 <script>
 /* ================= AYARLAR ================= */
-const VERSION = "v1.1";
+const VERSION = "v2.0";
 // Supabase proje bilgileri (BETEK Cup projesi). Anon key'i buraya yapıştırırsanız hiçbir cihazda elle girmeye gerek kalmaz.
 const DEFAULT_SUPABASE_URL = "https://arjecfiigkebkeccfpxi.supabase.co";
 const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyamVjZmlpZ2tlYmtlY2NmcHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDg5NzEsImV4cCI6MjEwNTEyNDk3MX0.YhcLALmCr8IQjTuBZTkJKSjIW8TlXpT6oOzPcgAc2k8";
@@ -173,10 +172,11 @@ const KATIL_SAYFASI = "katil.html";
 /* =========================================== */
 
 const TEAMS = [
-  {id:"kirmizi", ad:"KIRMIZI", renk:"#E53935", yazi:"#fff"},
-  {id:"yesil",   ad:"YEŞİL",   renk:"#2E9D4F", yazi:"#fff"},
-  {id:"mavi",    ad:"MAVİ",    renk:"#1E6FD9", yazi:"#fff"},
-  {id:"sari",    ad:"SARI",    renk:"#F2B705", yazi:"#1a1a1a"}
+  {id:"fusya",   ad:"FUŞYA",   renk:"#C2185B", yazi:"#fff"},
+  {id:"ekru",    ad:"EKRU",    renk:"#D8C7A0", yazi:"#2a2216"},
+  {id:"roze",    ad:"ROZE",    renk:"#F48FB1", yazi:"#3a0d1c"},
+  {id:"somon",   ad:"SOMON",   renk:"#FF8A65", yazi:"#3a1206"},
+  {id:"manolya", ad:"MANOLYA", renk:"#8E63B5", yazi:"#fff"}
 ];
 const T = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 
@@ -296,7 +296,7 @@ function currentScreen(){
 
 function topHtml(){
   return `<div class="top">
-    <div class="brand">Emniyetsiz Durum <span>Avı</span></div>
+    <div class="brand">Risk <span>Avı</span></div>
     ${S.kod ? `<div class="pill">Oturum <b>${esc(S.kod)}</b></div><div class="pill"><b>${S.kat.length}</b> katılımcı</div>` : ""}
     <div class="sp"></div>
     <span class="ver">${VERSION}</span>
@@ -320,7 +320,7 @@ function render(){
 function skeleton(scr){
   switch(scr){
     case "baglanti": return `<div class="setup">
-      <h1>Emniyetsiz Durum <span>Avı</span></h1>
+      <h1>Risk <span>Avı</span></h1>
       <p class="lead">Supabase bağlantısı tanımlı değil. Proje bilgilerini girin (bir kez yeterli — bu cihazda saklanır).</p>
       <div class="card">
         <div class="field"><label>Project URL</label><input id="cfgUrl" value="${esc(getCfg().url)}"></div>
@@ -328,8 +328,8 @@ function skeleton(scr){
         <div class="row"><button class="btn-main" data-act="savecfg">Kaydet ve Bağlan</button></div>
       </div></div>`;
     case "kurulum": return `<div class="setup">
-      <h1>Emniyetsiz Durum <span>Avı</span></h1>
-      <p class="lead">Katılımcılar QR ile lobiye girer, kura ile 4 takıma ayrılır, gösterilen görseldeki emniyetsiz durum ve davranışları yazarlar.</p>
+      <h1>Risk <span>Avı</span></h1>
+      <p class="lead">Katılımcılar QR ile lobiye girer, kura ile 5 takıma ayrılır, gösterilen görselde gördükleri riskleri madde madde yazarlar.</p>
       <div class="card"><h3>1 · Görsel</h3>${imgBoxHtml()}</div>
       <div class="card"><h3>2 · Yazma süresi</h3>
         <div class="row"><div class="field" style="max-width:180px"><label>Saniye</label><input id="sureInp" type="number" min="5" max="600" value="${S.sure}"></div></div>
@@ -392,15 +392,15 @@ function updLobby(){
       : `<div class="empty">Henüz kimse yok. QR kodu okutmalarını bekleyin…</div>`;
   }
   $("drawBtn").disabled = S.kat.length < 1;
-  const n = S.kat.length, base = Math.floor(n/4), extra = n % 4;
-  $("drawHint").textContent = n ? "Dağılım: " + [0,1,2,3].map(i => base + (i < extra ? 1 : 0)).join(" – ") + (n < 4 ? "  (4'ten az kişi: bazı takımlar boş kalacak)" : "") : "";
+  const N = TEAMS.length, n = S.kat.length, base = Math.floor(n / N), extra = n % N;
+  $("drawHint").textContent = n ? "Dağılım: " + TEAMS.map((t, i) => base + (i < extra ? 1 : 0)).join(" – ") + (n < N ? `  (${N}'ten az kişi: bazı takımlar boş kalacak)` : "") : "";
 }
 
 /* --- Kura --- */
 function shuffle(a){ a = a.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function balancedAssign(people){
   const order = shuffle(TEAMS.map(t => t.id)); // fazla kişinin hangi takımlara düşeceği de rastgele
-  return shuffle(people).map((p, i) => ({ p, takim: order[i % 4] }));
+  return shuffle(people).map((p, i) => ({ p, takim: order[i % order.length] }));
 }
 async function doDraw(){
   if(!S.kat.length) return;

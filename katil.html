@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117">
-<title>Emniyetsiz Durum Avı</title>
+<title>Risk Avı</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -63,16 +63,17 @@ p{color:var(--muted);line-height:1.5}
 
 <script>
 /* ================= AYARLAR ================= */
-const VERSION = "v1.1";
+const VERSION = "v2.0";
 const DEFAULT_SUPABASE_URL = "https://arjecfiigkebkeccfpxi.supabase.co";
 const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyamVjZmlpZ2tlYmtlY2NmcHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDg5NzEsImV4cCI6MjEwNTEyNDk3MX0.YhcLALmCr8IQjTuBZTkJKSjIW8TlXpT6oOzPcgAc2k8";
 /* =========================================== */
 
 const TEAMS = [
-  {id:"kirmizi", ad:"KIRMIZI", renk:"#E53935", yazi:"#fff"},
-  {id:"yesil",   ad:"YEŞİL",   renk:"#2E9D4F", yazi:"#fff"},
-  {id:"mavi",    ad:"MAVİ",    renk:"#1E6FD9", yazi:"#fff"},
-  {id:"sari",    ad:"SARI",    renk:"#F2B705", yazi:"#1a1a1a"}
+  {id:"fusya",   ad:"FUŞYA",   renk:"#C2185B", yazi:"#fff"},
+  {id:"ekru",    ad:"EKRU",    renk:"#D8C7A0", yazi:"#2a2216"},
+  {id:"roze",    ad:"ROZE",    renk:"#F48FB1", yazi:"#3a0d1c"},
+  {id:"somon",   ad:"SOMON",   renk:"#FF8A65", yazi:"#3a1206"},
+  {id:"manolya", ad:"MANOLYA", renk:"#8E63B5", yazi:"#fff"}
 ];
 const T = Object.fromEntries(TEAMS.map(t => [t.id, t]));
 const $ = id => document.getElementById(id);
@@ -176,7 +177,7 @@ function renderHead(){
     h.innerHTML = `<div class="lbl">Takımın</div><div class="tn">${t.ad} TAKIM</div><div class="me">${esc(P.me.ad)}</div>`;
   } else {
     h.style.background = ""; h.style.color = "";
-    h.innerHTML = `<div class="brand">Emniyetsiz Durum <span>Avı</span></div>${P.me ? `<div class="me">${esc(P.me.ad)}</div>` : ""}`;
+    h.innerHTML = `<div class="brand">Risk <span>Avı</span></div>${P.me ? `<div class="me">${esc(P.me.ad)}</div>` : ""}`;
   }
 }
 
@@ -212,9 +213,9 @@ function skeleton(scr){
     case "lobi": return `<div class="card center reveal"><div class="big">✅</div><h2>Lobidesiniz!</h2>
       <p>Eğitmen kurayı başlattığında takımınız bu ekranda görünecek.</p><div class="dots"><span></span><span></span><span></span></div></div>`;
     case "takimlar": return `<div class="card center reveal"><div class="big">🎯</div><h2 id="tkTitle"></h2>
-      <p>Birazdan ekranda bir görsel açılacak. <b style="color:var(--text)">Gördüğünüz emniyetsiz durum ve davranışları</b> süre bitmeden madde madde yazın.</p>
+      <p>Birazdan ekranda bir görsel açılacak. <b style="color:var(--text)">Görselde gördüğünüz tüm riskleri</b> süre bitmeden madde madde yazın.</p>
       <p>Her geçerli madde takımınıza 1 puan kazandırır.</p></div>`;
-    case "yazma": return `<div class="timer"><div class="row"><span>Emniyetsiz durum & davranışlar</span><span class="sec" id="sec">--</span></div><div class="prog"><i id="prog"></i></div></div>
+    case "yazma": return `<div class="timer"><div class="row"><span>Gördüğün riskler</span><span class="sec" id="sec">--</span></div><div class="prog"><i id="prog"></i></div></div>
       <div class="lines" id="lines"></div>
       <button class="add" id="addBtn" onclick="addLine()">+ Madde ekle</button>
       <div class="saved" id="savedLbl"></div>`;
@@ -264,14 +265,14 @@ function renderResult(){
 /* ---------- Yazma ---------- */
 function renderLines(){
   const el = $("lines"); if(!el) return;
-  el.innerHTML = P.items.map((v, i) => `<div class="line"><span class="n">${i + 1}.</span><input data-i="${i}" value="${esc(v)}" placeholder="Emniyetsiz durum / davranış" maxlength="200" enterkeyhint="next" ${P.locked ? "disabled" : ""}></div>`).join("");
+  el.innerHTML = P.items.map((v, i) => `<div class="line"><span class="n">${i + 1}.</span><input data-i="${i}" value="${esc(v)}" placeholder="Gördüğün risk" maxlength="200" enterkeyhint="next" ${P.locked ? "disabled" : ""}></div>`).join("");
 }
 function addLine(focus){
   if(P.locked) return;
   P.items.push("");
   const el = $("lines"), i = P.items.length - 1;
   const d = document.createElement("div"); d.className = "line";
-  d.innerHTML = `<span class="n">${i + 1}.</span><input data-i="${i}" placeholder="Emniyetsiz durum / davranış" maxlength="200" enterkeyhint="next">`;
+  d.innerHTML = `<span class="n">${i + 1}.</span><input data-i="${i}" placeholder="Gördüğün risk" maxlength="200" enterkeyhint="next">`;
   el.appendChild(d);
   if(focus !== false) d.querySelector("input").focus();
 }
