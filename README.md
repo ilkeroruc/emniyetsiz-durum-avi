@@ -1,0 +1,1 @@
+# emniyetsiz-durum-avi
