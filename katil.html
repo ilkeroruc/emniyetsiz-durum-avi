@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<title>Emniyetsiz Durum Avı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1f2630;--line:#2d3540;--text:#eef2f6;--muted:#8b97a5;--accent:#ff7a1a;--ok:#2fbf71;--bad:#e5484d}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:16px 20px;font-weight:800;background:var(--accent);color:#1a0d00;font-size:18px;width:100%}
+button:disabled{opacity:.45}
+input{font:inherit;font-size:17px;width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:12px;padding:14px}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+input:disabled{opacity:.6}
+.head{padding:18px 16px;padding-top:max(18px,env(safe-area-inset-top));text-align:center;background:var(--panel);border-bottom:1px solid var(--line);transition:background .4s}
+.head .lbl{font-size:12px;letter-spacing:2px;font-weight:700;opacity:.8;text-transform:uppercase}
+.head .tn{font-size:34px;font-weight:900;letter-spacing:-.5px;line-height:1.1}
+.head .me{font-size:14px;font-weight:600;opacity:.85;margin-top:2px}
+.brand{font-weight:900;font-size:22px}.brand span{color:var(--accent)}
+.wrap{flex:1;padding:20px 16px;padding-bottom:max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:16px;max-width:560px;width:100%;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.center{text-align:center;align-items:center}
+h2{font-size:24px;font-weight:900;line-height:1.2}
+p{color:var(--muted);line-height:1.5}
+.big{font-size:56px;line-height:1}
+.dots span{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--accent);margin:0 4px;animation:b 1.2s infinite}
+.dots span:nth-child(2){animation-delay:.2s}.dots span:nth-child(3){animation-delay:.4s}
+@keyframes b{0%,80%,100%{transform:scale(.5);opacity:.4}40%{transform:scale(1);opacity:1}}
+.timer{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0 6px}
+.timer .row{display:flex;align-items:center;justify-content:space-between;font-weight:800}
+.timer .sec{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums}
+.timer .sec.low{color:var(--bad)}
+.prog{height:8px;background:var(--panel2);border-radius:99px;overflow:hidden;margin-top:6px}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .2s linear}
+.lines{display:flex;flex-direction:column;gap:10px}
+.line{display:flex;gap:10px;align-items:center}
+.line .n{width:24px;text-align:right;font-weight:800;color:var(--muted);flex-shrink:0}
+.add{background:var(--panel2);color:var(--text);font-size:16px;padding:12px}
+.saved{font-size:13px;color:var(--muted);text-align:right;min-height:16px}
+.mine{list-style:none;display:flex;flex-direction:column;gap:6px}
+.mine li{background:var(--panel2);border-radius:10px;padding:10px 12px;font-weight:600}
+.scores{display:flex;flex-direction:column;gap:8px}
+.sc{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:12px;padding:12px 14px;font-weight:800}
+.sc .dot{width:14px;height:14px;border-radius:50%}
+.sc .v{margin-left:auto;font-size:20px}
+.sc.on{outline:2px solid #fff}
+.reveal{animation:rv .7s cubic-bezier(.2,1.5,.4,1)}
+@keyframes rv{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.err{color:#ffb3b5}
+.foot{font-size:11px;color:var(--muted);text-align:center;padding:8px}
+</style>
+</head>
+<body>
+<div class="head" id="head"></div>
+<div class="wrap" id="main"></div>
+<div class="foot" id="foot"></div>
+
+<script>
+/* ================= AYARLAR ================= */
+const VERSION = "v1.1";
+const DEFAULT_SUPABASE_URL = "https://arjecfiigkebkeccfpxi.supabase.co";
+const DEFAULT_SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFyamVjZmlpZ2tlYmtlY2NmcHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NDg5NzEsImV4cCI6MjEwNTEyNDk3MX0.YhcLALmCr8IQjTuBZTkJKSjIW8TlXpT6oOzPcgAc2k8";
+/* =========================================== */
+
+const TEAMS = [
+  {id:"kirmizi", ad:"KIRMIZI", renk:"#E53935", yazi:"#fff"},
+  {id:"yesil",   ad:"YEŞİL",   renk:"#2E9D4F", yazi:"#fff"},
+  {id:"mavi",    ad:"MAVİ",    renk:"#1E6FD9", yazi:"#fff"},
+  {id:"sari",    ad:"SARI",    renk:"#F2B705", yazi:"#1a1a1a"}
+];
+const T = Object.fromEntries(TEAMS.map(t => [t.id, t]));
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function ls(k, v){ try{ if(v === undefined) return localStorage.getItem(k); if(v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); }catch(e){ return null; } }
+
+const qs = new URLSearchParams(location.search);
+const KOD = (qs.get("o") || "").trim();
+let sb = null;
+async function q(p){ const { data, error } = await p; if(error) throw error; return data; }
+const api = {
+  getSession: k => q(sb.from("egitim_oturum").select("*").eq("kod", k).maybeSingle()),
+  getKat: id => q(sb.from("egitim_katilimci").select("*").eq("id", id).maybeSingle()),
+  listTeams: k => q(sb.from("egitim_katilimci").select("id,takim").eq("oturum", k)),
+  addKat: row => q(sb.from("egitim_katilimci").insert(row).select().single()),
+  updKat: (id, p) => q(sb.from("egitim_katilimci").update(p).eq("id", id))
+};
+
+const P = { o: null, me: null, screen: null, items: [], dirty: false, saveT: null, locked: false, err: null, seq: 0, lastSaved: null };
+
+/* ---------- Veri ---------- */
+async function refresh(){
+  if(!sb) return;
+  const seq = P.seq;
+  try{
+    const o = await api.getSession(KOD);
+    let me = P.me;
+    if(P.me){ me = await api.getKat(P.me.id); }
+    if(seq !== P.seq) return;
+    P.o = o;
+    if(P.me && !me){ ls("eo_me_" + KOD, null); } // yönetici çıkardı
+    P.me = me;
+    P.err = o ? null : "nosession";
+    render();
+  }catch(e){ console.warn(e); }
+}
+
+async function join(){
+  const ad = $("ad").value.trim().replace(/\s+/g, " ");
+  if(ad.length < 2) { $("joinErr").textContent = "Lütfen adınızı ve soyadınızı yazın."; return; }
+  $("joinBtn").disabled = true;
+  try{
+    let takim = null;
+    if(P.o && P.o.durum !== "lobi"){
+      // kuradan sonra katıldıysa en az kişili takıma ekle
+      const rows = await api.listTeams(KOD);
+      const c = {}; TEAMS.forEach(t => c[t.id] = 0); rows.forEach(r => { if(c[r.takim] != null) c[r.takim]++; });
+      takim = TEAMS.slice().sort((a, b) => c[a.id] - c[b.id])[0].id;
+    }
+    P.seq++;
+    P.me = await api.addKat({ oturum: KOD, ad: ad.slice(0, 60), takim });
+    ls("eo_me_" + KOD, P.me.id);
+    render();
+  }catch(e){
+    $("joinBtn").disabled = false;
+    $("joinErr").textContent = "Katılım başarısız: " + (e.message || e);
+  }
+}
+
+/* ---------- Kaydetme ---------- */
+function cleanItems(){ return P.items.map(s => s.trim()).filter(Boolean); }
+function scheduleSave(){
+  P.dirty = true;
+  clearTimeout(P.saveT);
+  P.saveT = setTimeout(flush, 600);
+  const s = $("savedLbl"); if(s) s.textContent = "kaydediliyor…";
+}
+async function flush(){
+  clearTimeout(P.saveT);
+  if(!P.dirty || !P.me) return;
+  P.dirty = false;
+  const list = cleanItems();
+  try{
+    await api.updKat(P.me.id, { maddeler: list });
+    P.lastSaved = list.length;
+    const s = $("savedLbl"); if(s) s.textContent = "✓ " + list.length + " madde gönderildi";
+  }catch(e){
+    P.dirty = true;
+    const s = $("savedLbl"); if(s) s.textContent = "Bağlantı sorunu, tekrar deneniyor…";
+    P.saveT = setTimeout(flush, 1500);
+  }
+}
+
+/* ---------- Görünüm ---------- */
+function screenName(){
+  if(!KOD) return "nolink";
+  if(!sb) return "nocfg";
+  if(!P.o) return P.err ? "nosession" : "loading";
+  if(!P.me) return "join";
+  const d = P.o.durum;
+  if(d === "lobi") return "lobi";
+  if(!P.me.takim) return "lobi";
+  return d; // takimlar | yazma | degerlendirme | sonuc
+}
+
+function renderHead(){
+  const h = $("head");
+  const t = P.me && P.me.takim && P.o && P.o.durum !== "lobi" ? T[P.me.takim] : null;
+  if(t){
+    h.style.background = t.renk; h.style.color = t.yazi;
+    h.innerHTML = `<div class="lbl">Takımın</div><div class="tn">${t.ad} TAKIM</div><div class="me">${esc(P.me.ad)}</div>`;
+  } else {
+    h.style.background = ""; h.style.color = "";
+    h.innerHTML = `<div class="brand">Emniyetsiz Durum <span>Avı</span></div>${P.me ? `<div class="me">${esc(P.me.ad)}</div>` : ""}`;
+  }
+}
+
+function render(){
+  renderHead();
+  const scr = screenName();
+  const main = $("main");
+  if(scr !== P.screen){
+    const prev = P.screen; P.screen = scr;
+    if(prev === "yazma") { P.locked = true; flush(); }
+    if(scr === "yazma"){
+      P.items = ((P.me && P.me.maddeler) || []).slice(); // sayfa yenilenirse yazılanlar geri gelsin
+      while(P.items.length < 3 || P.items[P.items.length - 1] !== "") P.items.push("");
+      P.locked = false; P.lastSaved = null;
+    }
+    main.innerHTML = skeleton(scr);
+    if(scr === "join"){ const i = $("ad"); i.value = ls("eo_ad") || ""; i.addEventListener("keydown", e => { if(e.key === "Enter") join(); }); }
+    if(scr === "yazma"){ renderLines(); const f = main.querySelector("input"); if(f) setTimeout(() => f.focus(), 100); }
+  }
+  update(scr);
+}
+
+function skeleton(scr){
+  switch(scr){
+    case "nolink": return `<div class="card center"><div class="big">🔗</div><h2>Geçersiz bağlantı</h2><p>Lütfen eğitim ekranındaki QR kodu tekrar okutun.</p></div>`;
+    case "nocfg": return `<div class="card center"><div class="big">⚠️</div><h2>Bağlantı ayarı eksik</h2><p>Eğitmene haber verin (Supabase anahtarı tanımlı değil).</p></div>`;
+    case "loading": return `<div class="card center"><div class="dots"><span></span><span></span><span></span></div><p>Bağlanıyor…</p></div>`;
+    case "nosession": return `<div class="card center"><div class="big">⌛</div><h2>Oturum bulunamadı</h2><p>Bu oturum kapatılmış olabilir. QR kodu tekrar okutun.</p></div>`;
+    case "join": return `<div class="card"><h2>Hoş geldiniz 👋</h2><p>Lobiye katılmak için adınızı ve soyadınızı yazın.</p>
+      <input id="ad" placeholder="Ad Soyad" autocomplete="name" maxlength="60" enterkeyhint="go">
+      <div class="err" id="joinErr"></div>
+      <button id="joinBtn" onclick="join()">Lobiye Katıl</button></div>`;
+    case "lobi": return `<div class="card center reveal"><div class="big">✅</div><h2>Lobidesiniz!</h2>
+      <p>Eğitmen kurayı başlattığında takımınız bu ekranda görünecek.</p><div class="dots"><span></span><span></span><span></span></div></div>`;
+    case "takimlar": return `<div class="card center reveal"><div class="big">🎯</div><h2 id="tkTitle"></h2>
+      <p>Birazdan ekranda bir görsel açılacak. <b style="color:var(--text)">Gördüğünüz emniyetsiz durum ve davranışları</b> süre bitmeden madde madde yazın.</p>
+      <p>Her geçerli madde takımınıza 1 puan kazandırır.</p></div>`;
+    case "yazma": return `<div class="timer"><div class="row"><span>Emniyetsiz durum & davranışlar</span><span class="sec" id="sec">--</span></div><div class="prog"><i id="prog"></i></div></div>
+      <div class="lines" id="lines"></div>
+      <button class="add" id="addBtn" onclick="addLine()">+ Madde ekle</button>
+      <div class="saved" id="savedLbl"></div>`;
+    case "degerlendirme": return `<div class="card center"><div class="big">🔎</div><h2>Süre doldu!</h2><p id="revInfo"></p></div>
+      <div class="card"><h2 style="font-size:18px">Puan durumu</h2><div class="scores" id="scores"></div></div>
+      <div class="card"><h2 style="font-size:18px">Yazdıklarınız</h2><ul class="mine" id="mine"></ul></div>`;
+    case "sonuc": return `<div id="res"></div>`;
+    default: return "";
+  }
+}
+
+function update(scr){
+  if(scr === "takimlar"){ const t = T[P.me.takim]; const el = $("tkTitle"); el.textContent = t.ad + " takımındasınız!"; el.style.color = t.renk; }
+  else if(scr === "yazma") tick();
+  else if(scr === "degerlendirme"){
+    const a = P.o.aktif_takim && T[P.o.aktif_takim];
+    $("revInfo").innerHTML = a ? `Şu an <b style="color:${a.renk}">${a.ad}</b> takımının maddeleri değerlendiriliyor.` : "Maddeler değerlendiriliyor…";
+    $("scores").innerHTML = scoresHtml();
+    const mine = (P.me.maddeler || []);
+    $("mine").innerHTML = mine.length ? mine.map(x => `<li>${esc(x)}</li>`).join("") : `<li style="color:var(--muted)">Madde yazılmadı.</li>`;
+  }
+  else if(scr === "sonuc") renderResult();
+}
+
+function scoresHtml(sorted){
+  const p = P.o.puanlar || {};
+  const list = sorted ? TEAMS.slice().sort((a, b) => (p[b.id] || 0) - (p[a.id] || 0)) : TEAMS;
+  return list.map(t => `<div class="sc ${P.me.takim === t.id ? "on" : ""}"><span class="dot" style="background:${t.renk}"></span>${t.ad}${P.me.takim === t.id ? " (siz)" : ""}<span class="v">${p[t.id] != null ? p[t.id] : "–"}</span></div>`).join("");
+}
+
+function renderResult(){
+  const el = $("res"), p = P.o.puanlar || {};
+  const sig = JSON.stringify(p) + P.me.takim; if(el.dataset.sig === sig) return; el.dataset.sig = sig;
+  const scored = TEAMS.filter(t => p[t.id] != null);
+  const top = Math.max.apply(null, scored.map(t => p[t.id]).concat([0]));
+  const winners = scored.filter(t => p[t.id] === top);
+  const iWon = winners.some(t => t.id === P.me.takim);
+  el.innerHTML = `<div class="card center reveal" style="background:${winners[0] ? winners[0].renk : "var(--panel)"};color:${winners[0] ? winners[0].yazi : "inherit"};border:0">
+      <div class="big">${iWon ? "🏆" : "👏"}</div>
+      <div style="font-size:13px;letter-spacing:2px;font-weight:800">${winners.length > 1 ? "BERABERLİK" : "KAZANAN"}</div>
+      <h2 style="font-size:34px">${winners.map(w => w.ad).join(" & ")} TAKIM</h2>
+      <div style="font-weight:800">${top} puan</div>
+      ${iWon ? `<div style="font-weight:700">Tebrikler, kazandınız!</div>` : ""}</div>
+    <div class="card"><h2 style="font-size:18px">Sıralama</h2><div class="scores">${scoresHtml(true)}</div></div>`;
+}
+
+/* ---------- Yazma ---------- */
+function renderLines(){
+  const el = $("lines"); if(!el) return;
+  el.innerHTML = P.items.map((v, i) => `<div class="line"><span class="n">${i + 1}.</span><input data-i="${i}" value="${esc(v)}" placeholder="Emniyetsiz durum / davranış" maxlength="200" enterkeyhint="next" ${P.locked ? "disabled" : ""}></div>`).join("");
+}
+function addLine(focus){
+  if(P.locked) return;
+  P.items.push("");
+  const el = $("lines"), i = P.items.length - 1;
+  const d = document.createElement("div"); d.className = "line";
+  d.innerHTML = `<span class="n">${i + 1}.</span><input data-i="${i}" placeholder="Emniyetsiz durum / davranış" maxlength="200" enterkeyhint="next">`;
+  el.appendChild(d);
+  if(focus !== false) d.querySelector("input").focus();
+}
+document.addEventListener("input", e => {
+  if(e.target.dataset && e.target.dataset.i != null && !P.locked){
+    const i = +e.target.dataset.i; P.items[i] = e.target.value;
+    if(i === P.items.length - 1 && e.target.value.trim()) addLine(false);
+    scheduleSave();
+  }
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Enter" && e.target.dataset && e.target.dataset.i != null){
+    e.preventDefault();
+    const next = document.querySelector(`input[data-i="${+e.target.dataset.i + 1}"]`);
+    if(next) next.focus(); else addLine();
+  }
+});
+document.addEventListener("focusout", e => { if(e.target.dataset && e.target.dataset.i != null && P.dirty) flush(); });
+
+function tick(){
+  if(P.screen !== "yazma") return;
+  const end = P.o.bitis ? new Date(P.o.bitis).getTime() : 0;
+  const ms = end - Date.now(), total = (P.o.sure || 30) * 1000;
+  const sec = Math.max(0, Math.ceil(ms / 1000));
+  const s = $("sec"); s.textContent = sec; s.classList.toggle("low", sec <= 5);
+  $("prog").style.width = Math.max(0, Math.min(100, ms / total * 100)) + "%";
+  if(ms <= 0 && !P.locked){
+    P.locked = true;
+    document.querySelectorAll("#lines input").forEach(i => { i.disabled = true; i.blur(); });
+    $("addBtn").disabled = true;
+    P.dirty = true; flush();
+    $("savedLbl").textContent = "Süre doldu — gönderiliyor…";
+  } else if(ms > 0 && P.locked){
+    // süre uzatıldı
+    P.locked = false;
+    document.querySelectorAll("#lines input").forEach(i => i.disabled = false);
+    $("addBtn").disabled = false;
+  }
+}
+setInterval(tick, 200);
+
+/* ---------- Başlat ---------- */
+async function boot(){
+  $("foot").textContent = "BETEK SEÇ · " + VERSION;
+  const c = { url: qs.get("u") || DEFAULT_SUPABASE_URL, key: qs.get("k") || DEFAULT_SUPABASE_KEY };
+  if(KOD && c.url && c.key && window.supabase) sb = window.supabase.createClient(c.url, c.key);
+  render();
+  if(!sb) return;
+  try{
+    P.o = await api.getSession(KOD);
+    if(!P.o){ P.err = "nosession"; P.o = null; render(); return; }
+    const id = ls("eo_me_" + KOD);
+    if(id){ P.me = await api.getKat(id); if(!P.me) ls("eo_me_" + KOD, null); }
+  }catch(e){ P.err = e; }
+  render();
+  try{
+    sb.channel("eo_" + KOD).on("postgres_changes", { event: "UPDATE", schema: "public", table: "egitim_oturum", filter: "kod=eq." + KOD }, () => refresh()).subscribe();
+  }catch(e){ console.warn(e); }
+  setInterval(refresh, 2000);
+}
+window.addEventListener("pagehide", () => { if(P.dirty) flush(); });
+document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") refresh(); else if(P.dirty) flush(); });
+document.addEventListener("input", e => { if(e.target.id === "ad") ls("eo_ad", e.target.value); });
+boot();
+</script>
+</body>
+</html>
